@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.37.37.37.37.37.37.3-dev - 948cb4180c98144b6dd009902bb190727053cc7c - Tue Dec 20 16:19:32 2016 +0100 */
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 47b0ac57e4567f4e8a62d30a3ee67777da5b0af5 - Tue Jan 10 11:45:20 2017 +0100 */
 if(!Array.forEach){Array.forEach=function(array,fun,thisp){var len=array.length;for(var i=0;i<len;i++){if(i in array){fun.call(thisp,array[i],i,array);}}};}
 if(!Array.map){Array.map=function(array,fun,thisp){var len=array.length;var res=[];for(var i=0;i<len;i++){if(i in array){res[i]=fun.call(thisp,array[i],i,array);}}
 return res;};}
@@ -79,12 +79,13 @@ for(i=0;i<urls.length&&this.activeDownloads<this.maxDownloads;++i){this.tryNextD
 {var request;for(var i=0;i<this.requests.length;i++)
 {if(this.requests[i]!=undefined)
 {for(var j=0;j<this.requests[i].length;j++)
-{request=this.requests[i][j];request.xhr.abort();this.removeDownload(request);}}}}};x3dom.RequestManager={};x3dom.RequestManager.requests=[];x3dom.RequestManager.maxParallelRequests=40;x3dom.RequestManager.failedRequests=0;x3dom.RequestManager.loadedRequests=0;x3dom.RequestManager.totalRequests=0;x3dom.RequestManager.activeRequests=[];x3dom.RequestManager.requestHeaders=[];x3dom.RequestManager.withCredentials=false;x3dom.RequestManager.addRequestHeader=function(header,value)
+{request=this.requests[i][j];request.xhr.abort();this.removeDownload(request);}}}}};x3dom.RequestManager={};x3dom.RequestManager.requests=[];x3dom.RequestManager.maxParallelRequests=40;x3dom.RequestManager.failedRequests=0;x3dom.RequestManager.loadedRequests=0;x3dom.RequestManager.totalRequests=0;x3dom.RequestManager.activeRequests=[];x3dom.RequestManager.requestHeaders=[];x3dom.RequestManager.withCredentials=false;x3dom.RequestManager.onSendRequest=function(requests,counters){};x3dom.RequestManager.onAbortAllRequests=function(counters){};x3dom.RequestManager.addRequestHeader=function(header,value)
 {this.requestHeaders.push({header:header,value:value});};x3dom.RequestManager._sendRequest=function()
-{if(this.activeRequests.length>this.maxParallelRequests)
+{this.onSendRequest(this.requests,this._getCounters());if(this.activeRequests.length>this.maxParallelRequests)
 {return;}
 var request=this.requests.pop();if(request)
-{this.activeRequests.push(request);request.send(null);this._sendRequest();}};x3dom.RequestManager.addRequest=function(request)
+{this.activeRequests.push(request);request.send(null);this._sendRequest();}};x3dom.RequestManager._getCounters=function()
+{return{loaded:this.loadedRequests,active:this.activeRequests.length,failed:this.failedRequests,total:this.totalRequests,};};x3dom.RequestManager.addRequest=function(request)
 {if(!(request instanceof XMLHttpRequest))
 {return;}
 this.totalRequests++;request.withCredentials=this.withCredentials;for(var i=0;i<this.requestHeaders.length;i++)
@@ -92,7 +93,7 @@ this.totalRequests++;request.withCredentials=this.withCredentials;for(var i=0;i<
 request.addEventListener("load",this._onLoadHandler.bind(this));request.addEventListener("error",this._onErrorHandler.bind(this));this.requests.push(request);this._sendRequest();};x3dom.RequestManager.abortAllRequests=function()
 {for(var i=0;i<this.activeRequests.length;i++)
 {this.activeRequests[i].abort();}
-this.requests=this.activeRequests=[];};x3dom.RequestManager._removeActiveRequest=function(request)
+this.requests=this.activeRequests=[];this.onAbortAllRequests(this._getCounters());};x3dom.RequestManager._removeActiveRequest=function(request)
 {var idx=this.activeRequests.indexOf(request);return this.activeRequests.splice(idx,1);};x3dom.RequestManager._onLoadHandler=function(e)
 {this._removeActiveRequest(e.target);this.loadedRequests++;this._sendRequest();};x3dom.RequestManager._onErrorHandler=function(e)
 {this._removeActiveRequest(e.target);this.failedRequests++;this._sendRequest();};x3dom.MultiMaterial=function(params)
@@ -846,7 +847,7 @@ this.loaded.meshCount+=1;shape._dirty.shader=true;shape._nameSpace.doc.needRende
 var attributes=primitive["attributes"];for(var attributeID in attributes)
 {var accessorName=attributes[attributeID];var accessor=this.scene.accessors[accessorName];var idx=null;switch(attributeID)
 {case"POSITION":idx=glTF_BUFFER_IDX.POSITION;if(indexed==false)
-{mesh.drawCount=accessor["count"];this._mesh._numFaces+=indicesAccessor["count"]/3;}
+{mesh.drawCount=accessor["count"];this._mesh._numFaces+=accessor["count"]/3;}
 this._mesh.numCoords+=accessor["count"];break;case"NORMAL":idx=glTF_BUFFER_IDX.NORMAL;break;case"TEXCOORD_0":idx=glTF_BUFFER_IDX.TEXCOORD;break;case"COLOR":idx=glTF_BUFFER_IDX.COLOR;break;}
 if(idx!=null){mesh.buffers[idx]={};mesh.buffers[idx].idx=this.loaded.bufferViews[accessor["bufferView"]];mesh.buffers[idx].offset=accessor["byteOffset"];mesh.buffers[idx].stride=accessor["byteStride"];mesh.buffers[idx].type=accessor["componentType"];mesh.buffers[idx].numComponents=this.getNumComponentsForType(accessor["type"]);}}
 this.loaded.meshCount+=1;shape._dirty.shader=true;shape._nameSpace.doc.needRender=true;x3dom.BinaryContainerLoader.checkError(gl);if(primitive.material!=null&&!this.meshOnly)
@@ -854,13 +855,12 @@ mesh.material=this.loadMaterial(gl,this.scene.materials[primitive.material]);if(
 shape.meshes=[];shape.meshes.push(mesh);};x3dom.glTF.glTFLoader.prototype.loadBufferViews=function(shape,gl)
 {var buffers={};var bufferViews=this.scene.bufferViews;for(var bufferId in bufferViews)
 {if(!bufferViews.hasOwnProperty(bufferId))continue;var bufferView=bufferViews[bufferId];if(bufferView.target==null&&bufferView.target!=gl.ARRAY_BUFFER&&bufferView.target!=gl.ELEMENT_ARRAY_BUFFER)
-continue;if(bufferView.target==gl.ELEMENT_ARRAY_BUFFER)
-shape._webgl.externalGeometry=1;var data=new Uint8Array(this.body.buffer,this.header.bodyOffset+bufferView["byteOffset"],bufferView["byteLength"]);var newBuffer=gl.createBuffer();gl.bindBuffer(bufferView["target"],newBuffer);gl.bufferData(bufferView["target"],data,gl.STATIC_DRAW);buffers[bufferId]=newBuffer;}
+continue;shape._webgl.externalGeometry=1;var data=new Uint8Array(this.body.buffer,this.header.bodyOffset+bufferView["byteOffset"],bufferView["byteLength"]);var newBuffer=gl.createBuffer();gl.bindBuffer(bufferView["target"],newBuffer);gl.bufferData(bufferView["target"],data,gl.STATIC_DRAW);buffers[bufferId]=newBuffer;}
 return buffers;};x3dom.glTF.glTFLoader.prototype.readHeader=function(response)
 {var header={};var magicBytes=new Uint8Array(response,0,4);var versionBytes=new Uint32Array(response,4,1);var lengthBytes=new Uint32Array(response,8,1);var sceneLengthBytes=new Uint32Array(response,12,1);var sceneFormatBytes=new Uint32Array(response,16,1);header.magic=new TextDecoder("ascii").decode(magicBytes);if(versionBytes[0]==1)
 header.version="Version 1";header.length=lengthBytes[0];header.sceneLength=sceneLengthBytes[0];if(sceneFormatBytes[0]==0)
 header.sceneFormat="JSON";header.bodyOffset=header.sceneLength+20;return header;};x3dom.glTF.glTFLoader.prototype.readScene=function(response,header)
-{var sceneBytes=new Uint8Array(response,20,header.sceneLength);var json=JSON.parse(new TextDecoder("utf-8").decode(sceneBytes));return json;};x3dom.glTF.glTFLoader.prototype.readBody=function(response,header)
+{var sceneBytes=new Uint8Array(response,20,header.sceneLength);var json=JSON.parse(new TextDecoder("utf-8").decode(sceneBytes));console.log(json);return json;};x3dom.glTF.glTFLoader.prototype.readBody=function(response,header)
 {var offset=header.sceneLength+20;var body=new Uint8Array(response,offset,header.length-offset);return body;};x3dom.glTF.glTFLoader.prototype.getNumComponentsForType=function(type)
 {switch(type)
 {case"SCALAR":return 1;case"VEC2":return 2;case"VEC3":return 3;case"VEC4":return 4;default:return 0;}};x3dom.glTF.glTFLoader.prototype.loadImage=function(imageNodeName,mimeType)
@@ -873,7 +873,7 @@ return null;};x3dom.glTF.glTFLoader.prototype.loadTexture=function(gl,textureNod
 {for(var key in samplerNode){if(samplerNode.hasOwnProperty(key))
 sampler[key]=samplerNode[key];}}
 var image=this.loadImage(textureNode.source);var target=textureNode.target;var type=textureNode.type;var glTFTexture=new x3dom.glTF.glTFTexture(gl,format,internalFormat,sampler,target,type,image);return glTFTexture;};x3dom.glTF.glTFLoader.prototype.loadMaterial=function(gl,materialNode)
-{if(materialNode.extensions!=null&&materialNode.extensions.KHR_materials_common!=null)
+{if(materialNode){if(materialNode.extensions!=null&&materialNode.extensions.KHR_materials_common!=null)
 {materialNode=materialNode.extensions.KHR_materials_common;var material=new x3dom.glTF.glTFKHRMaterialCommons();material.technique=glTF_KHR_MATERIAL_COMMON_TECHNIQUE[materialNode.technique];material.doubleSided=materialNode.doubleSided;for(var key in materialNode.values)
 if(materialNode.values.hasOwnProperty(key))
 {var value=materialNode.values[key];if(typeof value==='string')
@@ -887,7 +887,7 @@ if(materialNode.values.hasOwnProperty(key))
 {var textureNode=this.scene.textures[value];material.textures[key]=this.loadTexture(gl,textureNode);}
 else
 {material.values[key]=value;}}
-return material;}
+return material;}}
 return new x3dom.glTF.glTFKHRMaterialCommons();};x3dom.glTF.glTFLoader.prototype.loadShaderProgram=function(gl,shaderProgramName)
 {if(this.loaded.programs==null)
 this.loaded.programs={};if(this.loaded.programs[shaderProgramName]!=null)
@@ -899,18 +899,18 @@ x3dom.glTF={};glTF_BUFFER_IDX={INDEX:0,POSITION:1,NORMAL:2,TEXCOORD:3,COLOR:4};g
 {this.indexOffset=0;this.drawCount=0;this.numFaces=0;this.primitiveType=0;this.numCoords=0;this.buffers={};this.material=null;};x3dom.glTF.glTFMesh.prototype.bindVertexAttribPointer=function(gl,shaderProgram)
 {if(this.buffers[glTF_BUFFER_IDX.INDEX]){gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.buffers[glTF_BUFFER_IDX.INDEX].idx);}
 if(this.material!=null&&this.material.attributeMapping!=null)
-{var mapping=this.material.attributeMapping;this._bindVertexAttribPointer(gl,shaderProgram[mapping[glTF_BUFFER_IDX.POSITION]],this.buffers[glTF_BUFFER_IDX.POSITION]);this._bindVertexAttribPointer(gl,shaderProgram[mapping[glTF_BUFFER_IDX.NORMAL]],this.buffers[glTF_BUFFER_IDX.NORMAL]);this._bindVertexAttribPointer(gl,shaderProgram[mapping[glTF_BUFFER_IDX.TEXCOORD]],this.buffers[glTF_BUFFER_IDX.TEXCOORD]);this._bindVertexAttribPointer(gl,shaderProgram[mapping[glTF_BUFFER_IDX.COLOR]],this.buffers[glTF_BUFFER_IDX.COLOR]);}
+{var mapping=this.material.attributeMapping;this._bindVertexAttribPointer(gl,this.material.program[mapping[glTF_BUFFER_IDX.POSITION]],this.buffers[glTF_BUFFER_IDX.POSITION]);this._bindVertexAttribPointer(gl,this.material.program[mapping[glTF_BUFFER_IDX.NORMAL]],this.buffers[glTF_BUFFER_IDX.NORMAL]);this._bindVertexAttribPointer(gl,this.material.program[mapping[glTF_BUFFER_IDX.TEXCOORD]],this.buffers[glTF_BUFFER_IDX.TEXCOORD]);this._bindVertexAttribPointer(gl,this.material.program[mapping[glTF_BUFFER_IDX.COLOR]],this.buffers[glTF_BUFFER_IDX.COLOR]);}
 else
 {this._bindVertexAttribPointer(gl,shaderProgram.position,this.buffers[glTF_BUFFER_IDX.POSITION]);this._bindVertexAttribPointer(gl,shaderProgram.normal,this.buffers[glTF_BUFFER_IDX.NORMAL]);this._bindVertexAttribPointer(gl,shaderProgram.texcoord,this.buffers[glTF_BUFFER_IDX.TEXCOORD]);this._bindVertexAttribPointer(gl,shaderProgram.color,this.buffers[glTF_BUFFER_IDX.COLOR]);}};x3dom.glTF.glTFMesh.prototype.bindVertexAttribPointerPosition=function(gl,shaderProgram,useMaterial)
 {if(this.buffers[glTF_BUFFER_IDX.INDEX]){gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.buffers[glTF_BUFFER_IDX.INDEX].idx);}
 if(useMaterial==true&&this.material!=null&&this.material.attributeMapping!=null)
-{var mapping=this.material.attributeMapping;this._bindVertexAttribPointer(gl,shaderProgram[mapping[glTF_BUFFER_IDX.POSITION]],this.buffers[glTF_BUFFER_IDX.POSITION]);}
+{var mapping=this.material.attributeMapping;this._bindVertexAttribPointer(gl,this.material.program[mapping[glTF_BUFFER_IDX.POSITION]],this.buffers[glTF_BUFFER_IDX.POSITION]);}
 else
 {this._bindVertexAttribPointer(gl,shaderProgram.position,this.buffers[glTF_BUFFER_IDX.POSITION]);}};x3dom.glTF.glTFMesh.prototype._bindVertexAttribPointer=function(gl,shaderPosition,buffer)
-{if(shaderPosition!=null&&buffer!=null)
-{gl.bindBuffer(gl.ARRAY_BUFFER,buffer.idx);gl.vertexAttribPointer(shaderPosition,buffer.numComponents,buffer.type,false,buffer.stride,buffer.offset);gl.enableVertexAttribArray(shaderPosition);}};x3dom.glTF.glTFMesh.prototype.render=function(gl,polyMode)
+{if(shaderPosition!=null)
+{if(buffer!=null){gl.bindBuffer(gl.ARRAY_BUFFER,buffer.idx);gl.vertexAttribPointer(shaderPosition,buffer.numComponents,buffer.type,false,buffer.stride,buffer.offset);gl.enableVertexAttribArray(shaderPosition);}else{gl.disableVertexAttribArray(shaderPosition);}}};x3dom.glTF.glTFMesh.prototype.render=function(gl,polyMode)
 {if(this.material!=null&&!this.material.created())
-return;if(polyMode==null)
+return;if(polyMode==null||polyMode>this.primitiveType)
 polyMode=this.primitiveType;if(this.buffers[glTF_BUFFER_IDX.INDEX])
 gl.drawElements(polyMode,this.drawCount,this.buffers[glTF_BUFFER_IDX.INDEX].type,this.buffers[glTF_BUFFER_IDX.INDEX].offset);else
 gl.drawArrays(polyMode,0,this.drawCount);};x3dom.glTF.glTFTexture=function(gl,format,internalFormat,sampler,target,type,image)
@@ -922,7 +922,7 @@ gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,this.sampler.magFilter);if(
 gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,this.sampler.minFilter);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.bindTexture(gl.TEXTURE_2D,null);this.created=true;};x3dom.glTF.glTFTexture.prototype.bind=function(gl,textureUnit,shaderProgram,uniformName)
 {if(!this.created)
 this.create(gl);gl.activeTexture(gl.TEXTURE0+textureUnit);gl.bindTexture(gl.TEXTURE_2D,this.glTexture);gl.uniform1i(gl.getUniformLocation(shaderProgram,uniformName),textureUnit);};x3dom.glTF.glTFKHRMaterialCommons=function()
-{this.diffuse=[0.3,0.1,0.1,1];this.diffuseTex=null;this.emission=[0.0,0.0,0.0,1];this.emissionTex=null;this.specular=[0.8,0.8,0.8,1];this.specularTex=null;this.ambient=[0,0,0,1];this.shininess=2;this.transparency=0.0;this.globalAmbient=[0,0,0,1];this.lightVector=[1,0,0,1];this.doubleSided=false;this.technique=glTF_KHR_MATERIAL_COMMON_TECHNIQUE.BLINN;};x3dom.glTF.glTFKHRMaterialCommons.prototype.created=function()
+{this.diffuse=[0.3,0.1,0.1,1];this.diffuseTex=null;this.emission=[0.0,0.0,0.0,1];this.emissionTex=null;this.specular=[0.8,0.8,0.8,1];this.specularTex=null;this.ambient=[0,0,0,1];this.shininess=2;this.transparency=0.0;this.globalAmbient=[0,0,0,1];this.lightVector=[1,0,0,1];this.doubleSided=false;this.technique=glTF_KHR_MATERIAL_COMMON_TECHNIQUE.CONSTANT;this.attributeMapping={};this.attributeMapping[glTF_BUFFER_IDX.POSITION]="position";this.attributeMapping[glTF_BUFFER_IDX.NORMAL]="normal";this.attributeMapping[glTF_BUFFER_IDX.TEXCOORD]="texcoord";this.attributeMapping[glTF_BUFFER_IDX.COLOR]="color";};x3dom.glTF.glTFKHRMaterialCommons.prototype.created=function()
 {if(this.diffuseTex!=null&&this.diffuseTex.created!=true)
 return false;if(this.emissionTex!=null&&this.emissionTex.created!=true)
 return false;if(this.specularTex!=null&&this.specularTex.created!=true)
@@ -2550,17 +2550,18 @@ sp[tex.samplerName]=cnt;}}
 if(s_app&&s_app._cf.textureTransform.node){var texTrafo=s_app.texTransformMatrix();sp.texTrafoMatrix=texTrafo.toGL();}
 var attrib=null;var df,df_n=s_gl.dynamicFields.length;for(df=0;df<df_n;df++){attrib=s_gl.dynamicFields[df];if(sp[attrib.name]!==undefined){gl.bindBuffer(gl.ARRAY_BUFFER,attrib.buf);gl.vertexAttribPointer(sp[attrib.name],attrib.numComponents,gl.FLOAT,false,0,0);gl.enableVertexAttribArray(sp[attrib.name]);}}
 var v,v_n,offset,q_n;var isParticleSet=false;if(x3dom.isa(s_geo,x3dom.nodeTypes.ParticleSet)){isParticleSet=true;}
-if(s_gl.externalGeometry!=0){q_n=shape.meshes.length;}
+if(s_gl.externalGeometry!=0)
+{q_n=shape.meshes.length;}
 else
 {q_n=s_gl.positions.length;}
-for(var q=0;q<q_n;q++){var q6=6*q;if(s_gl.externalGeometry!=0){var mesh=shape.meshes[q];var exGeomShaderProgram=sp;if(mesh.material!=null){if(mesh.material.program!=null){exGeomShaderProgram=mesh.material.program;}
+for(var q=0;q<q_n;q++){var q6=6*q;if(s_gl.externalGeometry!=0)
+{var mesh=shape.meshes[q];var exGeomShaderProgram=sp;if(mesh.material!=null){if(mesh.material.program!=null){exGeomShaderProgram=mesh.material.program;}
 if(mesh.material.setShader!=null)
 mesh.material.setShader(gl,this.cache,shape,shape.getShaderProperties(viewarea));mesh.material.bind(gl,sp,this.cache,shape.getShaderProperties(viewarea));}
 mesh.bindVertexAttribPointer(gl,exGeomShaderProgram);var renderMode=viewarea.getRenderMode();var polyMode=null;if(renderMode>0)
 polyMode=(renderMode==1)?gl.POINTS:gl.LINES;mesh.render(gl,polyMode);}
-else
-if(!(sp.position!==undefined&&s_gl.buffers[q6+1]&&s_gl.indexes[q]))
-continue;indicesReady=false;if(s_gl.externalGeometry==0){if(!(sp.position!==undefined&&s_gl.buffers[q6+1]&&(s_gl.indexes[q])))
+else if(!(sp.position!==undefined&&s_gl.buffers[q6+1]&&s_gl.indexes[q]))
+continue;else{indicesReady=false;if(!(sp.position!==undefined&&s_gl.buffers[q6+1]&&(s_gl.indexes[q])))
 continue;if(s_gl.buffers[q6]){if(isParticleSet&&s_geo.drawOrder()!="any"){var indexArray,zPos=[];var pnts=s_geo._cf.coord.node.getPoints();var pn=(pnts.length==s_gl.indexes[q].length)?s_gl.indexes[q].length:0;for(var i=0;i<pn;i++){var center=model_view.multMatrixPnt(pnts[i]);zPos.push([i,center.z]);}
 if(s_geo.drawOrder()=="backtofront")
 zPos.sort(function(a,b){return a[1]-b[1];});else
@@ -4504,33 +4505,86 @@ h=base+1;for(j=2;j<sides;j++)
 {this._mesh._indices[0].push(h);this._mesh._indices[0].push(base);h=base+j;this._mesh._indices[0].push(h);}}}
 this.invalidateVolume();this._mesh._numFaces=this._mesh._indices[0].length/3;this._mesh._numCoords=this._mesh._positions[0].length/3;Array.forEach(this._parentNodes,function(node){node.setAllDirty();node.invalidateVolume();});}}}));x3dom.registerNodeType("ExternalGeometry","Geometry3D",defineClass(x3dom.nodeTypes.X3DSpatialGeometryNode,function(ctx){x3dom.nodeTypes.ExternalGeometry.superClass.call(this,ctx);this.addField_MFString(ctx,'url',[]);this._mesh._invalidate=false;this._mesh._numCoords=0;this._mesh._numFaces=0;this._currentURLIdx=0;},{update:function(shape,shaderProgram,gl,viewarea,context){var that=this;var xhr;if(this._vf['url'].length==0||this._currentURLIdx>=this._vf['url'].length)
 {return;}
+var currentURL=shape._nameSpace.getURL(this._vf['url'][this._currentURLIdx]);var urlSuffix=currentURL.substr(currentURL.lastIndexOf('.'));if(urlSuffix.substr(0,4)=='.src')
+{var srcUsedWarnMessage="Legacy SRC format used for content for \""+currentURL+"\". "+"It is recommended to use a binary-glTF-conformant .glb container instead.";x3dom.debug.logWarning(srcUsedWarnMessage);console.warn(srcUsedWarnMessage);ExternalGeometrySRC.updateRenderData(shape,shaderProgram,gl,viewarea,context,this._mesh,this._vf['url'],this._currentURLIdx);return;}
 if(x3dom.BinaryContainerLoader.outOfMemory){return;}
-shape._webgl.internalDownloadCount=1;shape._nameSpace.doc.downloadCount=1;xhr=new XMLHttpRequest();xhr.open("GET",shape._nameSpace.getURL(this._vf['url'][this._currentURLIdx]),true);xhr.responseType="arraybuffer";x3dom.RequestManager.addRequest(xhr);xhr.onerror=function(){x3dom.debug.logError("Unable to load SRC data from URL \""+that._vf['url'][that._currentURLIdx]+"\"");};xhr.onload=function(){shape._webgl.internalDownloadCount=0;shape._nameSpace.doc.downloadCount=0;shape._webgl.primType=[];shape._webgl.indexOffset=[];shape._webgl.drawCount=[];if((xhr.status==200||xhr.status==0)){var glTF=new x3dom.glTF.glTFLoader(xhr.response,true);if(glTF.header.sceneLength>0)
-{glTF.loaded={};glTF.loaded.meshes={};glTF.loaded.meshCount=0;var url=that._vf['url'][that._currentURLIdx];if(url.includes('#'))
-{var split=url.split('#');var meshName=split[split.length-1];glTF.getMesh(shape,shaderProgram,gl,meshName);}
+shape._webgl.internalDownloadCount=1;shape._nameSpace.doc.downloadCount=1;xhr=new XMLHttpRequest();xhr.open("GET",currentURL,true);xhr.responseType="arraybuffer";x3dom.RequestManager.addRequest(xhr);xhr.onerror=function(){x3dom.debug.logError("Unable to load GLB data from URL \""+currentURL+"\"");};xhr.onload=function(){shape._webgl.internalDownloadCount=0;shape._nameSpace.doc.downloadCount=0;shape._webgl.primType=[];shape._webgl.indexOffset=[];shape._webgl.drawCount=[];if((xhr.status==200||xhr.status==0)){var glTF=new x3dom.glTF.glTFLoader(xhr.response,true);if(glTF.header.sceneLength>0)
+{glTF.loaded={};glTF.loaded.meshes={};glTF.loaded.meshCount=0;if(currentURL.includes('#'))
+{var split=currentURL.split('#');var meshName=split[split.length-1];glTF.getMesh(shape,shaderProgram,gl,meshName);}
 else
 {glTF.getScene(shape,shaderProgram,gl);}
 for(var key in glTF._mesh){if(!glTF._mesh.hasOwnProperty(key))continue;that._mesh[key]=glTF._mesh[key];}}
 else
 {if((that._currentURLIdx+1)<that._vf['url'].length)
-{x3dom.debug.logWarning("Invalid SRC data, loaded from URL \""+
-that._vf['url'][that._currentURLIdx]+"\", trying next specified URL");++that._currentURLIdx;that.update(shape,shaderProgram,gl,viewarea,context);}
+{x3dom.debug.logWarning("Invalid GLB data, loaded from URL \""+
+currentURL+"\", trying next specified URL");++that._currentURLIdx;that.update(shape,shaderProgram,gl,viewarea,context);}
 else
-{x3dom.debug.logError("Invalid SRC data, loaded from URL \""+
-that._vf['url'][that._currentURLIdx]+"\","+" no other URLs left to try.");}}}
+{x3dom.debug.logError("Invalid GLB data, loaded from URL \""+
+currentURL+"\","+" no other URLs left to try.");}}}
 else
 {if((that._currentURLIdx+1)<that._vf['url'].length)
-{x3dom.debug.logWarning("Invalid SRC data, loaded from URL \""+
-that._vf['url'][that._currentURLIdx]+"\", trying next specified URL");++that._currentURLIdx;that.update(shape,shaderProgram,gl,viewarea,context);}
+{x3dom.debug.logWarning("Invalid GLB data, loaded from URL \""+
+currentURL+"\", trying next specified URL");++that._currentURLIdx;that.update(shape,shaderProgram,gl,viewarea,context);}
 else
-{x3dom.debug.logError("Invalid SRC data, loaded from URL \""+
-that._vf['url'][that._currentURLIdx]+"\","+" no other URLs left to try.");}}};},getVolume:function()
+{x3dom.debug.logError("Invalid GLB data, loaded from URL \""+
+currentURL+"\","+" no other URLs left to try.");}}};},getVolume:function()
 {var vol=this._mesh._vol;var shapeNode;if(!vol.isValid())
 {shapeNode=this._parentNodes[0];if(typeof shapeNode._vf["bboxCenter"]!='undefined'&&typeof shapeNode._vf["bboxSize"]!='undefined')
 {vol.setBoundsByCenterSize(shapeNode._vf["bboxCenter"],shapeNode._vf["bboxSize"]);}
 else
 {}}
-return vol;}}));x3dom.registerNodeType("X3DBinaryContainerGeometryNode","Geometry3D",defineClass(x3dom.nodeTypes.X3DSpatialGeometryNode,function(ctx){x3dom.nodeTypes.X3DBinaryContainerGeometryNode.superClass.call(this,ctx);this.addField_SFVec3f(ctx,'position',0,0,0);this.addField_SFVec3f(ctx,'size',1,1,1);this.addField_MFInt32(ctx,'vertexCount',[0]);this.addField_MFString(ctx,'primType',['TRIANGLES']);this._mesh._invalidate=false;this._mesh._numCoords=0;this._mesh._numFaces=0;this._diameter=this._vf.size.length();},{getMin:function(){var vol=this._mesh._vol;if(!vol.isValid()){vol.setBoundsByCenterSize(this._vf.position,this._vf.size);}
+return vol;}}));var ExternalGeometrySRC={updateRenderData:function(shape,shaderProgram,gl,viewarea,context,x3domMesh,urls,currentURLIndex)
+{var xhr;if(urls.length==0||currentURLIndex>=urls.length)
+{return;}
+if(x3dom.BinaryContainerLoader.outOfMemory){return;}
+shape._webgl.internalDownloadCount=1;shape._nameSpace.doc.downloadCount=1;xhr=new XMLHttpRequest();xhr.open("GET",shape._nameSpace.getURL(urls[currentURLIndex]),true);xhr.responseType="arraybuffer";xhr.send(null);xhr.onerror=function(){x3dom.debug.logError("Unable to load SRC data from URL \""+urls[currentURLIndex]+"\"");};xhr.onload=function(){shape._webgl.internalDownloadCount=0;shape._nameSpace.doc.downloadCount=0;var responseBeginUint32=new Uint32Array(xhr.response,0,12);var srcHeaderSize,srcBodySize,srcBodyOffset;var srcHeaderView,srcBodyView;var srcHeaderObj;if((xhr.status==200||xhr.status==0)&&responseBeginUint32.length>=3){srcHeaderSize=responseBeginUint32[2];srcBodyOffset=srcHeaderSize+12;srcBodySize=xhr.response.byteLength-srcBodyOffset;if(srcHeaderSize>0&&srcBodySize>=0)
+{srcHeaderView=new Uint8Array(xhr.response,12,srcHeaderSize);srcBodyView=new Uint8Array(xhr.response,srcBodyOffset,srcBodySize);try
+{srcHeaderObj=JSON.parse(String.fromCharCode.apply(null,srcHeaderView));}
+catch(exc)
+{x3dom.debug.logError("Unable to parse SRC header: "+exc);return;}
+ExternalGeometrySRC._updateRenderDataFromSRC(shape,shaderProgram,gl,srcHeaderObj,srcBodyView,x3domMesh);}
+else
+{if((currentURLIndex+1)<urls.length)
+{x3dom.debug.logWarning("Invalid SRC data, loaded from URL \""+
+urls[currentURLIndex]+"\", trying next specified URL");++currentURLIndex;ExternalGeometrySRC.updateRenderData(shape,shaderProgram,gl,viewarea,context,urls,currentURLIndex);}
+else
+{x3dom.debug.logError("Invalid SRC data, loaded from URL \""+
+urls[currentURLIndex]+"\","+" no other URLs left to try.");}}}
+else
+{if((currentURLIndex+1)<urls.length)
+{x3dom.debug.logWarning("Invalid SRC data, loaded from URL \""+
+urls[currentURLIndex]+"\", trying next specified URL");++currentURLIndex;ExternalGeometrySRC.updateRenderData(shape,shaderProgram,gl,viewarea,context,urls,currentURLIndex);}
+else
+{x3dom.debug.logError("Invalid SRC data, loaded from URL \""+
+urls[currentURLIndex]+"\","+" no other URLs left to try.");}}};},_updateRenderDataFromSRC:function(shape,shaderProgram,gl,srcHeaderObj,srcBodyView,x3domMesh)
+{shape.meshes=[];var INDEX_BUFFER_IDX=0;var POSITION_BUFFER_IDX=1;var NORMAL_BUFFER_IDX=2;var TEXCOORD_BUFFER_IDX=3;var COLOR_BUFFER_IDX=4;var ID_BUFFER_IDX=5;var MAX_NUM_BUFFERS_PER_DRAW=6;var indexViews=srcHeaderObj["accessors"]["indexViews"];var indexViewID,indexView;var attributeViews=srcHeaderObj["accessors"]["attributeViews"];var attributes;var attributeID,attributeView;var x3domTypeID,x3domShortTypeID,numComponents;var meshes=srcHeaderObj["meshes"];var mesh,meshID;var meshIdx,bufferOffset;var viewIDsToGLBufferIDs={};var indexViewBufferIDs={};for(indexViewID in indexViews)
+{indexView=indexViews[indexViewID];indexViewBufferIDs[indexView["bufferView"]]=true;}
+ExternalGeometrySRC._createGLBuffersFromSRCChunks(gl,srcHeaderObj["bufferChunks"],srcHeaderObj["bufferViews"],srcBodyView,indexViewBufferIDs,viewIDsToGLBufferIDs);for(indexViewID in indexViews)
+{indexView=indexViews[indexViewID];if(indexView["componentType"]!=gl.UNSIGNED_SHORT)
+{x3dom.debug.logWarning("SRC index componentType "+indexView["componentType"]+" is not UNSIGNED_SHORT. "+"Ignoring given value and assuming UNSIGNED_SHORT indices.");}
+shape._webgl.indexType=gl.UNSIGNED_SHORT;}
+meshIdx=0;bufferOffset=0;x3domMesh._numCoords=0;x3domMesh._numFaces=0;for(meshID in meshes)
+{var renderMesh=new x3dom.glTF.glTFMesh();mesh=meshes[meshID];indexViewID=mesh["indices"];if(indexViewID!="")
+{shape._webgl.externalGeometry=1;indexView=indexViews[indexViewID];renderMesh.indexOffset=indexView["byteOffset"];renderMesh.drawCount=indexView["count"];renderMesh.numFaces=indexView["count"]/3;x3domMesh._numFaces+=indexView["count"]/3;renderMesh.buffers[INDEX_BUFFER_IDX+bufferOffset]={};renderMesh.buffers[INDEX_BUFFER_IDX+bufferOffset].offset=indexView["byteOffset"];renderMesh.buffers[INDEX_BUFFER_IDX+bufferOffset].type=indexView["componentType"];renderMesh.buffers[INDEX_BUFFER_IDX+bufferOffset].idx=viewIDsToGLBufferIDs[indexView["bufferView"]];}
+else
+{shape._webgl.externalGeometry=-1;}
+renderMesh.primitiveType=mesh["primitive"];attributes=mesh["attributes"];for(attributeID in attributes)
+{attributeView=attributeViews[attributes[attributeID]];var idx=0;switch(attributeID)
+{case"position":x3domTypeID="coord";x3domShortTypeID="Pos";idx=POSITION_BUFFER_IDX+bufferOffset;if(mesh["indices"]=="")
+{renderMesh.drawCount[meshIdx]=attributeView["count"];x3domMesh._numFaces+=attributeView["count"]/3;renderMesh.numFaces=attributeView["count"]/3;}
+x3domMesh._numCoords+=attributeView["count"];break;case"normal":x3domTypeID="normal";x3domShortTypeID="Norm";idx=NORMAL_BUFFER_IDX+bufferOffset;break;case"texcoord":x3domTypeID="texCoord";x3domShortTypeID="Tex";idx=TEXCOORD_BUFFER_IDX+bufferOffset;break;case"color":x3domTypeID="color";x3domShortTypeID="Col";idx=COLOR_BUFFER_IDX+bufferOffset;break;case"id":x3domTypeID="id";x3domShortTypeID="Id";idx=ID_BUFFER_IDX+bufferOffset;shape._cf.geometry.node._vf.idsPerVertex=true;break;}
+shape["_"+x3domTypeID+"StrideOffset"][0]=attributeView["byteStride"];shape["_"+x3domTypeID+"StrideOffset"][1]=attributeView["byteOffset"];shape._webgl[x3domTypeID+"Type"]=attributeView["componentType"];numComponents=ExternalGeometrySRC._findNumComponentsForSRCAccessorType(attributeView["type"]);x3domMesh["_num"+x3domShortTypeID+"Components"]=numComponents;renderMesh.buffers[idx]={};renderMesh.buffers[idx].idx=viewIDsToGLBufferIDs[attributeView["bufferView"]];renderMesh.buffers[idx].offset=attributeView["byteOffset"];renderMesh.buffers[idx].stride=attributeView["byteStride"];renderMesh.buffers[idx].type=attributeView["componentType"];renderMesh.buffers[idx].numComponents=numComponents;}
+++meshIdx;bufferOffset+=MAX_NUM_BUFFERS_PER_DRAW;shape.meshes.push(renderMesh);}
+shape._dirty.shader=true;shape._nameSpace.doc.needRender=true;x3dom.BinaryContainerLoader.checkError(gl);},_createGLBuffersFromSRCChunks:function(gl,bufferChunksObj,bufferViewsObj,srcBodyView,indexViewBufferIDs,viewIDsToGLBufferIDs)
+{var i;var bufferView;var chunkIDList;var bufferType;var chunk;var newBuffer;var chunkDataView;var currentChunkDataOffset;for(var bufferViewID in bufferViewsObj)
+{bufferType=(typeof indexViewBufferIDs[bufferViewID]!=='undefined')?gl.ELEMENT_ARRAY_BUFFER:gl.ARRAY_BUFFER;bufferView=bufferViewsObj[bufferViewID];chunkIDList=bufferView["chunks"];if(chunkIDList.length==1)
+{chunk=bufferChunksObj[chunkIDList[0]];chunkDataView=new Uint8Array(srcBodyView.buffer,srcBodyView.byteOffset+chunk["byteOffset"],chunk["byteLength"]);newBuffer=gl.createBuffer();gl.bindBuffer(bufferType,newBuffer);gl.bufferData(bufferType,chunkDataView,gl.STATIC_DRAW);viewIDsToGLBufferIDs[bufferViewID]=newBuffer;}
+else
+{newBuffer=gl.createBuffer();gl.bindBuffer(bufferType,newBuffer);gl.bufferData(bufferType,bufferView["byteLength"],gl.STATIC_DRAW);currentChunkDataOffset=0;for(i=0;i<chunkIDList.length;++i)
+{chunk=bufferChunksObj[chunkIDList[i]];chunkDataView=new Uint8Array(srcBodyView.buffer,srcBodyView.byteOffset+chunk["byteOffset"],chunk["byteLength"]);gl.bufferSubData(bufferType,currentChunkDataOffset,chunkDataView);currentChunkDataOffset+=chunk["byteLength"];}
+viewIDsToGLBufferIDs[bufferViewID]=newBuffer;}}},_findNumComponentsForSRCAccessorType:function(type)
+{switch(type)
+{case"SCALAR":return 1;case"VEC2":return 2;case"VEC3":return 3;case"VEC4":return 4;default:return 0;}}};x3dom.registerNodeType("X3DBinaryContainerGeometryNode","Geometry3D",defineClass(x3dom.nodeTypes.X3DSpatialGeometryNode,function(ctx){x3dom.nodeTypes.X3DBinaryContainerGeometryNode.superClass.call(this,ctx);this.addField_SFVec3f(ctx,'position',0,0,0);this.addField_SFVec3f(ctx,'size',1,1,1);this.addField_MFInt32(ctx,'vertexCount',[0]);this.addField_MFString(ctx,'primType',['TRIANGLES']);this._mesh._invalidate=false;this._mesh._numCoords=0;this._mesh._numFaces=0;this._diameter=this._vf.size.length();},{getMin:function(){var vol=this._mesh._vol;if(!vol.isValid()){vol.setBoundsByCenterSize(this._vf.position,this._vf.size);}
 return vol.min;},getMax:function(){var vol=this._mesh._vol;if(!vol.isValid()){vol.setBoundsByCenterSize(this._vf.position,this._vf.size);}
 return vol.max;},getVolume:function(){var vol=this._mesh._vol;if(!vol.isValid()){vol.setBoundsByCenterSize(this._vf.position,this._vf.size);}
 return vol;},invalidateVolume:function(){},getCenter:function(){return this._vf.position;},getDiameter:function(){return this._diameter;},needLighting:function(){var hasTris=(this._vf.primType.length&&this._vf.primType[0].indexOf("TRIANGLE")>=0);return(this._vf.lit&&hasTris);}}));x3dom.registerNodeType("BinaryGeometry","Geometry3D",defineClass(x3dom.nodeTypes.X3DBinaryContainerGeometryNode,function(ctx){x3dom.nodeTypes.BinaryGeometry.superClass.call(this,ctx);this.addField_SFString(ctx,'index',"");this.addField_SFString(ctx,'coord',"");this.addField_SFString(ctx,'normal',"");this.addField_SFString(ctx,'texCoord',"");this.addField_SFString(ctx,'color',"");this.addField_SFString(ctx,'tangent',"");this.addField_SFString(ctx,'binormal',"");this.addField_SFString(ctx,'indexType',"Uint16");this.addField_SFString(ctx,'coordType',"Float32");this.addField_SFString(ctx,'normalType',"Float32");this.addField_SFString(ctx,'texCoordType',"Float32");this.addField_SFString(ctx,'colorType',"Float32");this.addField_SFString(ctx,'tangentType',"Float32");this.addField_SFString(ctx,'binormalType',"Float32");this.addField_SFBool(ctx,'normalAsSphericalCoordinates',false);this.addField_SFBool(ctx,'rgbaColors',false);this.addField_SFInt32(ctx,'numTexCoordComponents',2);this.addField_SFBool(ctx,'normalPerVertex',true);this.addField_SFBool(ctx,'idsPerVertex',false);this.addField_SFBool(ctx,'compressed',false);this._hasStrideOffset=false;this._mesh._numPosComponents=this._vf.normalAsSphericalCoordinates?4:3;this._mesh._numTexComponents=this._vf.numTexCoordComponents;this._mesh._numColComponents=this._vf.rgbaColors?4:3;this._mesh._numNormComponents=this._vf.normalAsSphericalCoordinates?2:3;this._vertexCountSum=0;for(var i=0;i<this._vf.vertexCount.length;++i){this._vertexCountSum+=this._vf.vertexCount[i];}},{parentAdded:function(parent)
@@ -4870,4 +4924,4 @@ this._currentRotation=new x3dom.fields.Quaternion();}}));x3dom.registerNodeType(
 else
 {}},_stopDragging:function()
 {x3dom.nodeTypes.X3DDragSensorNode.prototype._stopDragging.call(this);if(this._vf.autoOffset)
-{this._vf.offset=this._currentRotation.angle();this.postMessage('offset_changed',this._vf.offset);}}}));x3dom.versionInfo={version:'1.7.37.37.37.37.37.37.3-dev',revision:'948cb4180c98144b6dd009902bb190727053cc7c',date:'Tue Dec 20 16:19:32 2016 +0100'};
+{this._vf.offset=this._currentRotation.angle();this.postMessage('offset_changed',this._vf.offset);}}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'47b0ac57e4567f4e8a62d30a3ee67777da5b0af5',date:'Tue Jan 10 11:45:20 2017 +0100'};
