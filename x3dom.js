@@ -1,4 +1,4 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 27d06fce631acc9c9b68486d73b36645e96278e6 - Sun Jan 15 16:14:44 2017 +0100 */
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - d81263055df69a28b00e0cf46aa22d6da20f8f8d - Tue Jan 17 16:28:16 2017 +0100 */
 if(!Array.forEach){Array.forEach=function(array,fun,thisp){var len=array.length;for(var i=0;i<len;i++){if(i in array){fun.call(thisp,array[i],i,array);}}};}
 if(!Array.map){Array.map=function(array,fun,thisp){var len=array.length;var res=[];for(var i=0;i<len;i++){if(i in array){res[i]=fun.call(thisp,array[i],i,array);}}
 return res;};}
@@ -984,10 +984,10 @@ this.onMouseUp=function(evt){if(!this.isMulti){var prev_mouse_button=this.mouse_
 this.onMouseOver=function(evt){if(!this.isMulti){this.mouse_button=0;this.mouse_dragging=false;this.parent.doc.onMouseOver(that.gl,this.mouse_drag_x,this.mouse_drag_y,this.mouse_button);this.parent.doc.needRender=true;}}
 this.onMouseAlt=function(evt){if(!this.isMulti){this.mouse_button=0;this.mouse_dragging=false;this.classList.remove('x3dom-canvas-mousedown');this.parent.doc.onMouseOut(that.gl,this.mouse_drag_x,this.mouse_drag_y,this.mouse_button);this.parent.doc.needRender=true;}}
 this.onDoubleClick=function(evt){if(!this.isMulti){this.mouse_button=0;var pos=this.parent.mousePosition(evt);this.mouse_drag_x=pos.x;this.mouse_drag_y=pos.y;this.mouse_dragging=false;this.parent.doc.onDoubleClick(that.gl,this.mouse_drag_x,this.mouse_drag_y);this.parent.doc.needRender=true;}}
-this.onMouseMove=function(evt){if(!this.isMulti){var pos=this.parent.mousePosition(evt);if(pos.x!=that.lastMousePos.x||pos.y!=that.lastMousePos.y){that.lastMousePos=pos;if(evt.shiftKey){this.mouse_button=1;}
+this.onMouseMove=function(evt){if(!this.isMulti){var pos=this.parent.mousePosition(evt);if(pos.x!=that.lastMousePos.x||pos.y!=that.lastMousePos.y){that.lastMousePos=pos;this.mouse_drag_x=pos.x;this.mouse_drag_y=pos.y;if(this.mouse_dragging){if(evt.shiftKey){this.mouse_button=1;}
 if(evt.ctrlKey){this.mouse_button=4;}
 if(evt.altKey){this.mouse_button=2;}
-this.mouse_drag_x=pos.x;this.mouse_drag_y=pos.y;if(this.mouse_dragging){if(this.mouse_button==1&&!this.parent.disableLeftDrag||this.mouse_button==2&&!this.parent.disableRightDrag||this.mouse_button==4&&!this.parent.disableMiddleDrag)
+if(this.mouse_button==1&&!this.parent.disableLeftDrag||this.mouse_button==2&&!this.parent.disableRightDrag||this.mouse_button==4&&!this.parent.disableMiddleDrag)
 {this.parent.doc.onDrag(that.gl,this.mouse_drag_x,this.mouse_drag_y,this.mouse_button);}}
 else{this.parent.doc.onMove(that.gl,this.mouse_drag_x,this.mouse_drag_y,this.mouse_button);}
 this.parent.doc.needRender=true;evt.preventDefault();evt.stopPropagation();}}}
@@ -4926,4 +4926,4 @@ this._currentRotation=new x3dom.fields.Quaternion();}}));x3dom.registerNodeType(
 else
 {}},_stopDragging:function()
 {x3dom.nodeTypes.X3DDragSensorNode.prototype._stopDragging.call(this);if(this._vf.autoOffset)
-{this._vf.offset=this._currentRotation.angle();this.postMessage('offset_changed',this._vf.offset);}}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'27d06fce631acc9c9b68486d73b36645e96278e6',date:'Sun Jan 15 16:14:44 2017 +0100'};
+{this._vf.offset=this._currentRotation.angle();this.postMessage('offset_changed',this._vf.offset);}}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'d81263055df69a28b00e0cf46aa22d6da20f8f8d',date:'Tue Jan 17 16:28:16 2017 +0100'};
