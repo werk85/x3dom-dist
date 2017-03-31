@@ -1,4 +1,20 @@
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 43cf6b7e774744ca93b918953cd41ba064e3602b - Wed Feb 22 11:07:39 2017 +0100 */
+(function (root, factory) {
+  if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module unless amdModuleId is set
+    define('x3dom', [], function () {
+      return (root['x3dom'] = factory());
+    });
+  } else if (typeof module === 'object' && module.exports) {
+    // Node. Does not work with strict CommonJS, but
+    // only CommonJS-like environments that support module.exports,
+    // like Node.
+    module.exports = factory();
+  } else {
+    root['x3dom'] = factory();
+  }
+}(this, function () {
+
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - bbe61986d3d8f411c9cb19664a4240572c0f6285 - Tue Mar 21 10:47:54 2017 +0100 */
 if(!Array.forEach){Array.forEach=function(array,fun,thisp){var len=array.length;for(var i=0;i<len;i++){if(i in array){fun.call(thisp,array[i],i,array);}}};}
 if(!Array.map){Array.map=function(array,fun,thisp){var len=array.length;var res=[];for(var i=0;i<len;i++){if(i in array){res[i]=fun.call(thisp,array[i],i,array);}}
 return res;};}
@@ -831,13 +847,17 @@ this.updateMesh(shape,shaderProgram,gl,mesh);};x3dom.glTF.glTFLoader.prototype.r
 {this._mesh._numCoords=0;this._mesh._numFaces=0;shape._webgl.externalGeometry=-1;if(this.loaded.bufferViews==null)
 this.loaded.bufferViews=this.loadBufferViews(shape,gl);};x3dom.glTF.glTFLoader.prototype.updateScene=function(shape,shaderProgram,gl,scene)
 {var nodes=scene["nodes"];for(var i=0;i<nodes.length;++i)
-{var nodeID=nodes[i];this.traverseNode(shape,shaderProgram,gl,this.scene.nodes[nodeID]);}};x3dom.glTF.glTFLoader.prototype.traverseNode=function(shape,shaderProgram,gl,node)
-{var children=node["children"];if(children!=null)
+{var nodeID=nodes[i];var worldTransform=new x3dom.fields.SFMatrix4f();this.traverseNode(shape,shaderProgram,gl,this.scene.nodes[nodeID],worldTransform);}};x3dom.glTF.glTFLoader.prototype.traverseNode=function(shape,shaderProgram,gl,node,transform)
+{var worldTransform=transform.mult(this.getTransform(node));var children=node["children"];if(children!=null)
 for(var i=0;i<children.length;++i)
-{var childID=children[i];this.traverseNode(shape,shaderProgram,gl,this.scene.nodes[childID]);}
+{var childID=children[i];this.traverseNode(shape,shaderProgram,gl,this.scene.nodes[childID],worldTransform);}
 var meshes=node["meshes"];if(meshes!=null&&meshes.length>0)
-for(var i=0;i<meshes.length;++i){var meshID=meshes[i];if(this.loaded.meshes[meshID]==null){this.updateMesh(shape,shaderProgram,gl,this.scene.meshes[meshID]);this.loaded.meshes[meshID]=1;}}};x3dom.glTF.glTFLoader.prototype.updateMesh=function(shape,shaderProgram,gl,mesh)
-{var primitives=mesh["primitives"];for(var i=0;i<primitives.length;++i){this.loadglTFMesh(shape,shaderProgram,gl,primitives[i]);}};x3dom.glTF.glTFLoader.prototype.loadPrimitive=function(shape,shaderProgram,gl,primitive)
+for(var i=0;i<meshes.length;++i){var meshID=meshes[i];{this.updateMesh(shape,shaderProgram,gl,this.scene.meshes[meshID],worldTransform);this.loaded.meshes[meshID]=1;}}};x3dom.glTF.glTFLoader.prototype.getTransform=function(node){var transform=new x3dom.fields.SFMatrix4f();if(node.matrix){transform.setFromArray(node.matrix);return transform;}
+if(node.scale&&node.scale.length==3){var s=node.scale;transform.setScale(new x3dom.fields.SFVec3f(s[0],s[1],s[2]));}
+if(node.rotation&&node.rotation.length==4){var r=node.rotation;var rotationMatrix=new x3dom.fields.SFMatrix4f();rotationMatrix.setRotate(new x3dom.fields.Quaternion(r[0],r[1],r[2],r[3]));transform=rotationMatrix.mult(transform);}
+if(node.translation&&node.translation.length==3){var t=node.translation;var translationMatrix=x3dom.fields.SFMatrix4f.translation(new x3dom.fields.SFVec3f(t[0],t[1],t[2]));transform=translationMatrix.mult(transform);}
+return transform;};x3dom.glTF.glTFLoader.prototype.updateMesh=function(shape,shaderProgram,gl,mesh,worldTransform)
+{var primitives=mesh["primitives"];for(var i=0;i<primitives.length;++i){this.loadglTFMesh(shape,shaderProgram,gl,primitives[i],worldTransform);}};x3dom.glTF.glTFLoader.prototype.loadPrimitive=function(shape,shaderProgram,gl,primitive)
 {var INDEX_BUFFER_IDX=0;var POSITION_BUFFER_IDX=1;var NORMAL_BUFFER_IDX=2;var TEXCOORD_BUFFER_IDX=3;var COLOR_BUFFER_IDX=4;var x3domTypeID,x3domShortTypeID;var meshIdx=this.loaded.meshCount;var bufferOffset=meshIdx*6;shape._webgl.primType[meshIdx]=primitive["mode"];var indexed=(primitive.indices!=null&&primitive.indices!="");if(indexed==true){var indicesAccessor=this.scene.accessors[primitive.indices];shape._webgl.indexOffset[meshIdx]=indicesAccessor["byteOffset"];shape._webgl.drawCount[meshIdx]=indicesAccessor["count"];shape._webgl.buffers[INDEX_BUFFER_IDX+bufferOffset]=this.loaded.bufferViews[indicesAccessor["bufferView"]];this._mesh._numFaces+=indicesAccessor["count"]/3;}
 var attributes=primitive["attributes"];for(var attributeID in attributes)
 {var accessorName=attributes[attributeID];var accessor=this.scene.accessors[accessorName];switch(attributeID)
@@ -845,7 +865,7 @@ var attributes=primitive["attributes"];for(var attributeID in attributes)
 {shape._webgl.drawCount[meshIdx]=accessor["count"];this._mesh._numFaces+=accessor["count"]/3;}
 this._mesh._numCoords+=accessor["count"];break;case"NORMAL":x3domTypeID="normal";x3domShortTypeID="Norm";shape._webgl.buffers[NORMAL_BUFFER_IDX+bufferOffset]=this.loaded.bufferViews[accessor["bufferView"]];break;case"TEXCOORD_0":x3domTypeID="texCoord";x3domShortTypeID="Tex";shape._webgl.buffers[TEXCOORD_BUFFER_IDX+bufferOffset]=this.loaded.bufferViews[accessor["bufferView"]];break;case"COLOR":x3domTypeID="color";x3domShortTypeID="Col";shape._webgl.buffers[COLOR_BUFFER_IDX+bufferOffset]=this.loaded.bufferViews[accessor["bufferView"]];break;}
 if(x3domTypeID!=null){shape["_"+x3domTypeID+"StrideOffset"][meshIdx]=[];shape["_"+x3domTypeID+"StrideOffset"][meshIdx][0]=accessor["byteStride"];shape["_"+x3domTypeID+"StrideOffset"][meshIdx][1]=accessor["byteOffset"];shape._webgl[x3domTypeID+"Type"]=accessor["componentType"];this._mesh["_num"+x3domShortTypeID+"Components"]=this.getNumComponentsForType(accessor["type"]);}}
-this.loaded.meshCount+=1;shape._dirty.shader=true;shape._nameSpace.doc.needRender=true;x3dom.BinaryContainerLoader.checkError(gl);};x3dom.glTF.glTFLoader.prototype.loadglTFMesh=function(shape,shaderProgram,gl,primitive)
+this.loaded.meshCount+=1;shape._dirty.shader=true;shape._nameSpace.doc.needRender=true;x3dom.BinaryContainerLoader.checkError(gl);};x3dom.glTF.glTFLoader.prototype.loadglTFMesh=function(shape,shaderProgram,gl,primitive,worldTransform)
 {"use strict";var mesh=new x3dom.glTF.glTFMesh();mesh.primitiveType=primitive["mode"];var indexed=(primitive.indices!=null&&primitive.indices!="");if(indexed==true){var indicesAccessor=this.scene.accessors[primitive.indices];mesh.buffers[glTF_BUFFER_IDX.INDEX]={};mesh.buffers[glTF_BUFFER_IDX.INDEX].offset=indicesAccessor["byteOffset"];mesh.buffers[glTF_BUFFER_IDX.INDEX].type=indicesAccessor["componentType"];mesh.buffers[glTF_BUFFER_IDX.INDEX].idx=this.loaded.bufferViews[indicesAccessor["bufferView"]];mesh.drawCount=indicesAccessor["count"];this._mesh._numFaces+=indicesAccessor["count"]/3;}
 var attributes=primitive["attributes"];for(var attributeID in attributes)
 {var accessorName=attributes[attributeID];var accessor=this.scene.accessors[accessorName];var idx=null;switch(attributeID)
@@ -853,8 +873,8 @@ var attributes=primitive["attributes"];for(var attributeID in attributes)
 {mesh.drawCount=accessor["count"];this._mesh._numFaces+=accessor["count"]/3;}
 this._mesh.numCoords+=accessor["count"];break;case"NORMAL":idx=glTF_BUFFER_IDX.NORMAL;break;case"TEXCOORD_0":idx=glTF_BUFFER_IDX.TEXCOORD;break;case"COLOR":idx=glTF_BUFFER_IDX.COLOR;break;}
 if(idx!=null){mesh.buffers[idx]={};mesh.buffers[idx].idx=this.loaded.bufferViews[accessor["bufferView"]];mesh.buffers[idx].offset=accessor["byteOffset"];mesh.buffers[idx].stride=accessor["byteStride"];mesh.buffers[idx].type=accessor["componentType"];mesh.buffers[idx].numComponents=this.getNumComponentsForType(accessor["type"]);}}
-this.loaded.meshCount+=1;shape._dirty.shader=true;shape._nameSpace.doc.needRender=true;x3dom.BinaryContainerLoader.checkError(gl);if(primitive.material!=null&&!this.meshOnly)
-mesh.material=this.loadMaterial(gl,this.scene.materials[primitive.material]);if(shape.meshes==null)
+this.loaded.meshCount+=1;shape._dirty.shader=true;shape._nameSpace.doc.needRender=true;x3dom.BinaryContainerLoader.checkError(gl);if(primitive.material!=null&&!this.meshOnly){mesh.material=this.loadMaterial(gl,this.scene.materials[primitive.material]);mesh.material.worldTransform=worldTransform;}
+if(shape.meshes==null)
 shape.meshes=[];shape.meshes.push(mesh);};x3dom.glTF.glTFLoader.prototype.loadBufferViews=function(shape,gl)
 {var buffers={};var bufferViews=this.scene.bufferViews;for(var bufferId in bufferViews)
 {if(!bufferViews.hasOwnProperty(bufferId))continue;var bufferView=bufferViews[bufferId];if(bufferView.target==null&&bufferView.target!=gl.ARRAY_BUFFER&&bufferView.target!=gl.ELEMENT_ARRAY_BUFFER)
@@ -967,8 +987,9 @@ if(this.technique.uniforms.hasOwnProperty(key))
 {var uniformName=this.technique.uniforms[key];if(this.textures[uniformName]!=null){var texture=this.textures[uniformName];texture.bind(gl,texUnit,this.program.program,key);texUnit++;}
 else if(this.values[uniformName]!=null)
 this.program[key]=this.values[uniformName];}};x3dom.glTF.glTFMaterial.prototype.updateTransforms=function(shaderParameter)
-{if(this.program!=null)
-{this.program.bind();for(var key in this.semanticMapping){if(!this.semanticMapping.hasOwnProperty(key))continue;var mapping=this.semanticMapping[key];switch(mapping){case"modelViewMatrix":this.program[key]=shaderParameter.modelViewMatrix;break;case"viewMatrix":this.program[key]=shaderParameter.viewMatrix;break;case"modelViewInverseTransposeMatrix":var mat=shaderParameter.normalMatrix;var model_view_inv_gl=[mat[0],mat[1],mat[2],mat[4],mat[5],mat[6],mat[8],mat[9],mat[10]];this.program[key]=model_view_inv_gl;break;case"modelViewInverseMatrix":this.program[key]=shaderParameter.modelViewMatrixInverse;break;case"modelViewProjectionMatrix":this.program[key]=shaderParameter.modelViewProjectionMatrix;break;case"modelMatrix":this.program[key]=shaderParameter.model;break;case"projectionMatrix":this.program[key]=shaderParameter.projectionMatrix;break;default:break;}}}};x3dom.X3DCanvas=function(x3dElem,canvasIdx)
+{var matrix4f=new x3dom.fields.SFMatrix4f();function glMultMatrix4(gl,m){matrix4f.setFromArray(gl);return matrix4f.mult(m).toGL();}
+if(this.program!==null)
+{this.program.bind();for(var key in this.semanticMapping){if(!this.semanticMapping.hasOwnProperty(key))continue;var mapping=this.semanticMapping[key];switch(mapping){case"modelViewMatrix":this.program[key]=glMultMatrix4(shaderParameter.modelViewMatrix,this.worldTransform);break;case"viewMatrix":this.program[key]=shaderParameter.viewMatrix;break;case"modelViewInverseTransposeMatrix":var worldInverse=this.worldTransform.inverse();matrix4f.setFromArray(shaderParameter.modelViewMatrixInverse);var mat=worldInverse.mult(matrix4f).transpose().toGL();var model_view_inv_gl=[mat[0],mat[1],mat[2],mat[4],mat[5],mat[6],mat[8],mat[9],mat[10]];this.program[key]=model_view_inv_gl;break;case"modelViewInverseMatrix":var worldInverse=this.worldTransform.inverse();matrix4f.setFromArray(shaderParameter.modelViewMatrixInverse);this.program[key]=worldInverse.mult(matrix4f);break;case"modelViewProjectionMatrix":this.program[key]=glMultMatrix4(shaderParameter.modelViewProjectionMatrix,this.worldTransform);break;case"modelMatrix":this.program[key]=glMultMatrix4(shaderParameter.model,this.worldTransform);break;case"projectionMatrix":this.program[key]=shaderParameter.projectionMatrix;break;default:break;}}}};x3dom.X3DCanvas=function(x3dElem,canvasIdx)
 {var that=this;this._canvasIdx=canvasIdx;this.x3dElem=x3dElem;this._current_dim=[0,0];this.fps_t0=new Date().getTime();this.lastTimeFPSWasTaken=0;this.framesSinceLastTime=0;this._totalTime=0;this._elapsedTime=0;this.doc=null;this.devicePixelRatio=window.devicePixelRatio||1;this.lastMousePos={x:0,y:0};x3dom.caps.DOMNodeInsertedEvent_perSubtree=!(navigator.userAgent.indexOf('MSIE')!=-1||navigator.userAgent.indexOf('Trident')!=-1);x3dElem.__setAttribute=x3dElem.setAttribute;x3dElem.setAttribute=function(attrName,newVal)
 {this.__setAttribute(attrName,newVal);newVal=parseInt(newVal)*that.devicePixelRatio;switch(attrName){case"width":that.canvas.setAttribute("width",newVal);if(that.doc&&that.doc._viewarea){that.doc._viewarea._width=parseInt(that.canvas.getAttribute("width"),0);that.doc.needRender=true;}
 break;case"height":that.canvas.setAttribute("height",newVal);if(that.doc&&that.doc._viewarea){that.doc._viewarea._height=parseInt(that.canvas.getAttribute("height"),0);that.doc.needRender=true;}
@@ -4009,7 +4030,7 @@ else if(fieldName=="fieldOfView")
 else if(fieldName=="zNear"||fieldName=="zFar"){this._projMatrix=null;this.resetView();}
 else if(fieldName.indexOf("bind")>=0){this.bind(this._vf.bind);}},getCenterOfRotation:function(){return this.getCurrentTransform().multMatrixPnt(this._vf.centerOfRotation);},getViewMatrix:function(){return this._viewMatrix;},resetView:function(){var offset=x3dom.fields.SFMatrix4f.translation(new x3dom.fields.SFVec3f((this._vf.fieldOfView[0]+this._vf.fieldOfView[2])/2,(this._vf.fieldOfView[1]+this._vf.fieldOfView[3])/2,0));this._viewMatrix=x3dom.fields.SFMatrix4f.translation(this._vf.position).mult(this._vf.orientation.toMatrix());this._viewMatrix=this._viewMatrix.inverse();this._projMatrix=null;if(this._vf.isActive&&this._nameSpace&&this._nameSpace.doc._viewarea){this._nameSpace.doc._viewarea.resetNavHelpers();}},getNear:function(){return this._vf.zNear;},getFar:function(){return this._vf.zFar;},getFieldOfView:function(){return 0.785;},setZoom:function(value){this._fieldOfView[0]=-value;this._fieldOfView[1]=-value;this._fieldOfView[2]=value;this._fieldOfView[3]=value;this._projMatrix=null;},getZoom:function(value){return this._fieldOfView;},getProjectionMatrix:function(aspect)
 {var fov=this.getFieldOfView();var zfar=this._vf.zFar;var znear=this._vf.zNear;if(znear<=0||zfar<=0)
-{var scene=this._nameSpace.doc._viewarea._scene;var min=x3dom.fields.SFVec3f.copy(scene._lastMin);var max=x3dom.fields.SFVec3f.copy(scene._lastMax);var dia=max.subtract(min);var tanfov2=Math.tan(fov/2.0);var dist1=((dia.y/2.0)/tanfov2+dia.z)+this._fieldOfView[2];var dist2=((dia.x/2.0)/tanfov2+dia.z)+this._fieldOfView[2];znear=0.00001;zfar=(dist1>dist2)?dist1*4:dist2*4;}
+{this._viewMatrix._23=0;var scene=this._nameSpace.doc._viewarea._scene;var min=x3dom.fields.SFVec3f.copy(scene._lastMin);var max=x3dom.fields.SFVec3f.copy(scene._lastMax);var dia=max.subtract(min);var tanfov2=Math.tan(fov/2.0);var dist1=((dia.y/2.0)/tanfov2+dia.z)+this._fieldOfView[2];var dist2=((dia.x/2.0)/tanfov2+dia.z)+this._fieldOfView[2];zfar=(dist1>dist2)?dist1*4:dist2*4;znear=-zfar;}
 if(this._projMatrix==null||this._lastAspect!=aspect||this._zNear!=znear||this._zFar!=zfar)
 {var near=this._zNear=znear;var far=this._zFar=zfar;var left=this._fieldOfView[0];var bottom=this._fieldOfView[1];var right=this._fieldOfView[2];var top=this._fieldOfView[3];this._projMatrix=x3dom.fields.SFMatrix4f.ortho(left,right,bottom,top,near,far,aspect);}
 this._lastAspect=aspect;return this._projMatrix;}}));x3dom.registerNodeType("Viewfrustum","Navigation",defineClass(x3dom.nodeTypes.X3DViewpointNode,function(ctx){x3dom.nodeTypes.Viewfrustum.superClass.call(this,ctx);this.addField_SFMatrix4f(ctx,'modelview',1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1);this.addField_SFMatrix4f(ctx,'projection',1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1);this._viewMatrix=this._vf.modelview.transpose().inverse();this._projMatrix=this._vf.projection.transpose();this._centerOfRotation=new x3dom.fields.SFVec3f(0,0,0);},{fieldChanged:function(fieldName){if(fieldName=="modelview"){this.resetView();}
@@ -4933,4 +4954,7 @@ this._currentRotation=new x3dom.fields.Quaternion();}}));x3dom.registerNodeType(
 else
 {}},_stopDragging:function()
 {x3dom.nodeTypes.X3DDragSensorNode.prototype._stopDragging.call(this);if(this._vf.autoOffset)
-{this._vf.offset=this._currentRotation.angle();this.postMessage('offset_changed',this._vf.offset);}}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'43cf6b7e774744ca93b918953cd41ba064e3602b',date:'Wed Feb 22 11:07:39 2017 +0100'};
+{this._vf.offset=this._currentRotation.angle();this.postMessage('offset_changed',this._vf.offset);}}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'bbe61986d3d8f411c9cb19664a4240572c0f6285',date:'Tue Mar 21 10:47:54 2017 +0100'};
+return x3dom;
+
+}));
