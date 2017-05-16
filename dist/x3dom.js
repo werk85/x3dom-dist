@@ -14,7 +14,7 @@
   }
 }(this, function () {
 
-/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - bbe61986d3d8f411c9cb19664a4240572c0f6285 - Tue Mar 21 10:47:54 2017 +0100 */
+/** X3DOM Runtime, http://www.x3dom.org/ 1.7.3-dev - 454b794d0e045f862f6e15ce5102dfccc54ae94f - Tue May 16 13:01:14 2017 +0200 */
 if(!Array.forEach){Array.forEach=function(array,fun,thisp){var len=array.length;for(var i=0;i<len;i++){if(i in array){fun.call(thisp,array[i],i,array);}}};}
 if(!Array.map){Array.map=function(array,fun,thisp){var len=array.length;var res=[];for(var i=0;i<len;i++){if(i in array){res[i]=fun.call(thisp,array[i],i,array);}}
 return res;};}
@@ -4954,7 +4954,7 @@ this._currentRotation=new x3dom.fields.Quaternion();}}));x3dom.registerNodeType(
 else
 {}},_stopDragging:function()
 {x3dom.nodeTypes.X3DDragSensorNode.prototype._stopDragging.call(this);if(this._vf.autoOffset)
-{this._vf.offset=this._currentRotation.angle();this.postMessage('offset_changed',this._vf.offset);}}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'bbe61986d3d8f411c9cb19664a4240572c0f6285',date:'Tue Mar 21 10:47:54 2017 +0100'};
+{this._vf.offset=this._currentRotation.angle();this.postMessage('offset_changed',this._vf.offset);}}}));x3dom.versionInfo={version:'1.7.3-dev',revision:'454b794d0e045f862f6e15ce5102dfccc54ae94f',date:'Tue May 16 13:01:14 2017 +0200'};
 return x3dom;
 
 }));
