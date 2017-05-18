@@ -11,12 +11,14 @@ module.exports = function (grunt) {
             ]
         },
 
-        gitPull: {
+        subrepos: {
             x3dom: {
+                src: 'upstream',
                 repos: [
                     {
-                        path: ['upstream'],
-                        repo: 'https://github.com/x3dom/x3dom.git'
+                        name: 'x3dom',
+                        url: 'https://github.com/x3dom/x3dom.git',
+                        branch: 'master'
                     },
                 ]
             }
@@ -65,7 +67,7 @@ module.exports = function (grunt) {
 
     grunt.registerTask('bundle', [
         'clean:dist',
-        'gitPull:x3dom',
+        'subrepos:x3dom',
         'shell:build',
         'umd:dist',
         'copy:styles'
