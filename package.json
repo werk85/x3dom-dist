@@ -1,6 +1,6 @@
 {
   "name": "x3dom",
-  "version": "1.7.4-dev.1",
+  "version": "1.7.4-dev.2",
   "description": "x3dom with UMD.",
   "main": "dist/x3dom.js",
   "repository": {
